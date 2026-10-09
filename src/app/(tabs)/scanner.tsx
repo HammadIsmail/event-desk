@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions, Camera } from 'expo-camera';
@@ -18,6 +19,7 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { useAlert } from '@/context/AlertContext';
 import { dataStore } from '@/services/dataStore';
 import { Registration } from '@/types';
+import { responsiveFontSize, moderateScale, metrics } from '@/theme/responsive';
 
 export default function ScannerScreen() {
   const { user, can } = useAuth();
@@ -125,7 +127,11 @@ export default function ScannerScreen() {
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <HeaderBar title="Scanner" subtitle="QR Verification & Gate Check-in" />
 
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.scrollBody}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {scannedRecord ? (
           <View style={styles.resultContainer}>
             <View
@@ -136,7 +142,7 @@ export default function ScannerScreen() {
             >
               <Ionicons
                 name={alreadyCheckedIn ? 'alert-circle' : 'checkmark-circle'}
-                size={22}
+                size={moderateScale(22)}
                 color={alreadyCheckedIn ? '#d97706' : '#059669'}
               />
               <View style={{ flex: 1 }}>
@@ -210,7 +216,7 @@ export default function ScannerScreen() {
                   <ActivityIndicator color="#ffffff" size="small" />
                 ) : (
                   <>
-                    <Ionicons name="enter-outline" size={18} color="#ffffff" />
+                    <Ionicons name="enter-outline" size={moderateScale(18)} color="#ffffff" />
                     <Text style={styles.checkInBtnText}>Confirm Check-In</Text>
                   </>
                 )}
@@ -221,13 +227,12 @@ export default function ScannerScreen() {
               style={[styles.scanAnotherBtn, { backgroundColor: colors.surfaceHighlight }]}
               onPress={handleResetScanner}
             >
-              <Ionicons name="scan-outline" size={17} color={colors.primary} />
+              <Ionicons name="scan-outline" size={moderateScale(17)} color={colors.primary} />
               <Text style={[styles.scanAnotherBtnText, { color: colors.primary }]}>Scan Another</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.scannerWrapper}>
-            {/* Live Camera View without overflow:hidden or black clipping */}
             {hasPermission ? (
               <View style={styles.cameraFrame}>
                 <CameraView
@@ -245,7 +250,7 @@ export default function ScannerScreen() {
               </View>
             ) : (
               <View style={[styles.cameraPlaceholder, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Ionicons name="camera-outline" size={54} color={colors.primary} />
+                <Ionicons name="camera-outline" size={moderateScale(54)} color={colors.primary} />
                 <Text style={[styles.cameraPlaceholderTitle, { color: colors.text }]}>
                   Camera Permission Required
                 </Text>
@@ -261,7 +266,7 @@ export default function ScannerScreen() {
 
             {errorMsg ? (
               <View style={styles.errorBanner}>
-                <Ionicons name="alert-circle" size={18} color="#dc2626" />
+                <Ionicons name="alert-circle" size={moderateScale(18)} color="#dc2626" />
                 <Text style={styles.errorText}>{errorMsg}</Text>
               </View>
             ) : null}
@@ -302,7 +307,7 @@ export default function ScannerScreen() {
             </View>
           </View>
         )}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -311,24 +316,26 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
-  content: {
-    flex: 1,
-    padding: 16,
+  scrollBody: {
+    padding: metrics.spacing.md,
+    paddingBottom: moderateScale(40),
   },
   scannerWrapper: {
-    flex: 1,
-    gap: 14,
+    gap: moderateScale(14),
     maxWidth: 480,
     width: '100%',
     alignSelf: 'center',
   },
   cameraFrame: {
-    height: 360,
+    height: moderateScale(320),
+    maxHeight: 360,
     width: '100%',
     position: 'relative',
     backgroundColor: '#000000',
     borderWidth: 2,
     borderColor: '#0284c7',
+    borderRadius: metrics.radius.lg,
+    overflow: 'hidden',
   },
   cameraView: {
     ...StyleSheet.absoluteFill,
@@ -340,114 +347,118 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   scanReticle: {
-    width: 220,
-    height: 220,
+    width: moderateScale(210),
+    height: moderateScale(210),
     borderWidth: 2.5,
     borderColor: '#38bdf8',
-    borderRadius: 12,
+    borderRadius: metrics.radius.md,
   },
   scanHintText: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: responsiveFontSize(12),
     fontWeight: '700',
-    marginTop: 14,
+    marginTop: moderateScale(14),
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 8,
+    paddingHorizontal: metrics.spacing.md,
+    paddingVertical: moderateScale(5),
+    borderRadius: metrics.radius.sm,
   },
   cameraPlaceholder: {
-    borderRadius: 18,
-    padding: 28,
+    borderRadius: metrics.radius.lg,
+    padding: metrics.spacing.xl,
     alignItems: 'center',
     borderWidth: 1,
-    gap: 10,
+    gap: moderateScale(10),
   },
   cameraPlaceholderTitle: {
-    fontSize: 17,
+    fontSize: responsiveFontSize(16),
     fontWeight: '800',
   },
   cameraPlaceholderSub: {
-    fontSize: 13,
+    fontSize: responsiveFontSize(12),
     textAlign: 'center',
     lineHeight: 18,
   },
   permBtn: {
     backgroundColor: '#0284c7',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 10,
-    marginTop: 6,
+    paddingHorizontal: metrics.spacing.lg,
+    paddingVertical: moderateScale(10),
+    borderRadius: metrics.radius.sm,
+    marginTop: moderateScale(6),
+    minHeight: metrics.minTouchTarget,
+    justifyContent: 'center',
   },
   permBtnText: {
     color: '#ffffff',
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: responsiveFontSize(13),
   },
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: moderateScale(8),
     backgroundColor: '#fef2f2',
     borderWidth: 1,
     borderColor: '#fecaca',
-    padding: 12,
-    borderRadius: 10,
+    padding: metrics.spacing.md,
+    borderRadius: metrics.radius.md,
   },
   errorText: {
     color: '#dc2626',
-    fontSize: 13,
+    fontSize: responsiveFontSize(12),
     fontWeight: '600',
     flex: 1,
   },
   manualEntryCard: {
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: metrics.radius.lg,
+    padding: metrics.spacing.md,
     borderWidth: 1,
-    gap: 8,
+    gap: moderateScale(8),
   },
   manualEntryTitle: {
-    fontSize: 10,
+    fontSize: responsiveFontSize(10),
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   manualInputRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: moderateScale(8),
   },
   manualInput: {
     flex: 1,
-    height: 44,
+    minHeight: metrics.minTouchTarget,
+    height: moderateScale(46),
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    fontSize: 13,
+    borderRadius: metrics.radius.sm,
+    paddingHorizontal: metrics.spacing.md,
+    fontSize: responsiveFontSize(13),
     fontWeight: '700',
   },
   verifyBtn: {
     backgroundColor: '#0284c7',
-    paddingHorizontal: 18,
-    borderRadius: 10,
+    paddingHorizontal: metrics.spacing.lg,
+    borderRadius: metrics.radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: metrics.minTouchTarget,
   },
   verifyBtnText: {
     color: '#ffffff',
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: responsiveFontSize(13),
   },
   resultContainer: {
     maxWidth: 480,
     width: '100%',
     alignSelf: 'center',
-    gap: 14,
+    gap: moderateScale(14),
   },
   resultBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 14,
-    borderRadius: 14,
+    gap: moderateScale(10),
+    padding: metrics.spacing.md,
+    borderRadius: metrics.radius.lg,
   },
   bannerGreen: {
     backgroundColor: '#ecfdf5',
@@ -460,20 +471,20 @@ const styles = StyleSheet.create({
     borderColor: '#fde68a',
   },
   bannerTitle: {
-    fontSize: 14,
+    fontSize: responsiveFontSize(13),
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   bannerSubtitle: {
-    fontSize: 11,
+    fontSize: responsiveFontSize(11),
     color: '#64748b',
-    marginTop: 2,
+    marginTop: moderateScale(2),
   },
   infoCard: {
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: metrics.radius.lg,
+    padding: metrics.spacing.md,
     borderWidth: 1,
-    gap: 12,
+    gap: moderateScale(12),
   },
   infoRow: {
     flexDirection: 'row',
@@ -481,72 +492,74 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   infoRegNo: {
-    fontSize: 20,
+    fontSize: responsiveFontSize(18),
     fontWeight: '900',
   },
   infoName: {
-    fontSize: 15,
+    fontSize: responsiveFontSize(14),
     fontWeight: '700',
-    marginTop: 2,
+    marginTop: moderateScale(2),
   },
   infoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: moderateScale(8),
   },
   infoItem: {
     width: '48%',
-    padding: 9,
-    borderRadius: 8,
+    padding: moderateScale(9),
+    borderRadius: metrics.radius.sm,
   },
   infoLabel: {
-    fontSize: 9,
+    fontSize: responsiveFontSize(9),
     fontWeight: '700',
   },
   infoValue: {
-    fontSize: 13,
+    fontSize: responsiveFontSize(12),
     fontWeight: '800',
-    marginTop: 2,
+    marginTop: moderateScale(2),
   },
   partnerCallout: {
-    padding: 9,
-    borderRadius: 8,
+    padding: moderateScale(9),
+    borderRadius: metrics.radius.sm,
   },
   partnerCalloutText: {
-    fontSize: 12,
+    fontSize: responsiveFontSize(11),
   },
   feeInfoRow: {
     borderTopWidth: 1,
-    paddingTop: 8,
+    paddingTop: moderateScale(8),
   },
   feeInfoText: {
-    fontSize: 12,
+    fontSize: responsiveFontSize(11),
     fontWeight: '600',
   },
   checkInBtn: {
     backgroundColor: '#059669',
-    height: 48,
-    borderRadius: 12,
+    minHeight: metrics.minTouchTarget,
+    height: moderateScale(48),
+    borderRadius: metrics.radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: moderateScale(8),
   },
   checkInBtnText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: responsiveFontSize(14),
     fontWeight: '800',
   },
   scanAnotherBtn: {
-    height: 44,
-    borderRadius: 10,
+    minHeight: metrics.minTouchTarget,
+    height: moderateScale(46),
+    borderRadius: metrics.radius.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: moderateScale(6),
   },
   scanAnotherBtnText: {
-    fontSize: 13,
+    fontSize: responsiveFontSize(13),
     fontWeight: '700',
   },
 });

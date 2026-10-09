@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/context/ThemeContext';
+import { responsiveFontSize, moderateScale, metrics } from '@/theme/responsive';
 
 export interface DropdownOption {
   label: string;
@@ -68,7 +69,7 @@ export const SelectDropdown: React.FC<Props> = ({
             </Text>
           )}
         </View>
-        <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
+        <Ionicons name="chevron-down" size={moderateScale(18)} color={colors.textMuted} />
       </TouchableOpacity>
 
       {/* Options Modal */}
@@ -90,7 +91,7 @@ export const SelectDropdown: React.FC<Props> = ({
                 onPress={() => setModalVisible(false)}
                 style={[styles.modalCloseBtn, { backgroundColor: colors.surfaceHighlight }]}
               >
-                <Ionicons name="close" size={18} color={colors.textSecondary} />
+                <Ionicons name="close" size={moderateScale(18)} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -136,7 +137,7 @@ export const SelectDropdown: React.FC<Props> = ({
                     </View>
 
                     {isSelected && (
-                      <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                      <Ionicons name="checkmark-circle" size={moderateScale(20)} color={colors.primary} />
                     )}
                   </TouchableOpacity>
                 );
@@ -151,18 +152,19 @@ export const SelectDropdown: React.FC<Props> = ({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 6,
+    gap: moderateScale(6),
   },
   label: {
-    fontSize: 10,
+    fontSize: responsiveFontSize(10),
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   trigger: {
-    height: 48,
-    borderRadius: 12,
+    minHeight: metrics.minTouchTarget,
+    height: moderateScale(48),
+    borderRadius: metrics.radius.md,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: metrics.spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -171,30 +173,30 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: moderateScale(8),
   },
   triggerText: {
-    fontSize: 14,
+    fontSize: responsiveFontSize(14),
     fontWeight: '700',
   },
   triggerSub: {
-    fontSize: 11,
+    fontSize: responsiveFontSize(11),
     fontWeight: '800',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: moderateScale(6),
+    paddingVertical: moderateScale(2),
+    borderRadius: metrics.radius.sm,
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.65)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: metrics.spacing.lg,
   },
   modalCard: {
-    borderRadius: 18,
+    borderRadius: metrics.radius.lg,
     width: '100%',
-    maxWidth: 420,
+    maxWidth: 440,
     maxHeight: '75%',
     borderWidth: 1,
     overflow: 'hidden',
@@ -203,37 +205,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 14,
+    paddingHorizontal: metrics.spacing.lg,
+    paddingVertical: metrics.spacing.md,
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: 15,
+    fontSize: responsiveFontSize(15),
     fontWeight: '800',
   },
   modalCloseBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: moderateScale(32),
+    height: moderateScale(32),
+    borderRadius: moderateScale(16),
     alignItems: 'center',
     justifyContent: 'center',
   },
   listContent: {
-    paddingVertical: 6,
+    paddingVertical: moderateScale(6),
   },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingVertical: 14,
+    paddingHorizontal: metrics.spacing.lg,
+    paddingVertical: metrics.spacing.md,
+    minHeight: metrics.minTouchTarget,
     borderBottomWidth: 1,
   },
   optionLabel: {
-    fontSize: 14,
+    fontSize: responsiveFontSize(14),
   },
   optionSub: {
-    fontSize: 11,
-    marginTop: 2,
+    fontSize: responsiveFontSize(11),
+    marginTop: moderateScale(2),
   },
 });

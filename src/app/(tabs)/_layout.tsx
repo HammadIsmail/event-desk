@@ -5,8 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { AppLoader } from '@/components/AppLoader';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { responsiveFontSize, moderateScale } from '@/theme/responsive';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   const { user, isLoading, isSuperAdmin, can } = useAuth();
   const { colors } = useAppTheme();
   const router = useRouter();
@@ -30,6 +33,9 @@ export default function TabLayout() {
   const hasScanner = can('can_scan');
   const hasAnalytics = can('can_view_analytics');
 
+  const bottomInset = Math.max(insets.bottom, 8);
+  const tabHeight = moderateScale(54) + bottomInset;
+
   return (
     <Tabs
       screenOptions={{
@@ -40,12 +46,12 @@ export default function TabLayout() {
           backgroundColor: colors.tabBarBg,
           borderTopColor: colors.tabBarBorder,
           borderTopWidth: 1,
-          height: 58,
-          paddingBottom: 6,
-          paddingTop: 6,
+          height: tabHeight,
+          paddingBottom: bottomInset,
+          paddingTop: moderateScale(6),
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: responsiveFontSize(11),
           fontWeight: '700',
         },
       }}

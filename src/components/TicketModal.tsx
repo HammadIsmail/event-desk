@@ -10,11 +10,13 @@ import {
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Registration } from '@/types';
 import { PaymentBadge } from '@/components/PaymentBadge';
 import { downloadPassDirectly, shareTicketPDF } from '@/services/ticketService';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAlert } from '@/context/AlertContext';
+import { responsiveFontSize, moderateScale, metrics } from '@/theme/responsive';
 
 interface Props {
   visible: boolean;
@@ -23,6 +25,7 @@ interface Props {
 }
 
 export const TicketModal: React.FC<Props> = ({ visible, registration, onClose }) => {
+  const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
   const { showError, showSuccess } = useAlert();
   const [downloading, setDownloading] = useState(false);
@@ -53,6 +56,8 @@ export const TicketModal: React.FC<Props> = ({ visible, registration, onClose })
       setSharing(false);
     }
   };
+
+  const footerBottomPadding = Math.max(insets.bottom, metrics.spacing.md);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -151,7 +156,15 @@ export const TicketModal: React.FC<Props> = ({ visible, registration, onClose })
           </ScrollView>
 
           {/* Action buttons */}
-          <View style={[styles.footer, { borderTopColor: colors.borderLight }]}>
+          <View
+            style={[
+              styles.footer,
+              {
+                borderTopColor: colors.borderLight,
+                paddingBottom: footerBottomPadding,
+              },
+            ]}
+          >
             <TouchableOpacity
               style={styles.pdfBtn}
               onPress={handleDirectDownload}
@@ -161,7 +174,7 @@ export const TicketModal: React.FC<Props> = ({ visible, registration, onClose })
                 <ActivityIndicator color="#ffffff" size="small" />
               ) : (
                 <>
-                  <Ionicons name="download-outline" size={18} color="#ffffff" />
+                  <Ionicons name="download-outline" size={moderateScale(18)} color="#ffffff" />
                   <Text style={styles.pdfBtnText}>Save Pass to Phone</Text>
                 </>
               )}
@@ -176,7 +189,7 @@ export const TicketModal: React.FC<Props> = ({ visible, registration, onClose })
                 <ActivityIndicator color={colors.primary} size="small" />
               ) : (
                 <>
-                  <Ionicons name="share-social-outline" size={17} color={colors.primary} />
+                  <Ionicons name="share-social-outline" size={moderateScale(17)} color={colors.primary} />
                   <Text style={[styles.shareBtnText, { color: colors.primary }]}>Share</Text>
                 </>
               )}
@@ -194,13 +207,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: metrics.spacing.md,
   },
   cardContainer: {
-    borderRadius: 20,
+    borderRadius: metrics.radius.xl,
     width: '100%',
     maxWidth: 440,
-    maxHeight: '90%',
+    maxHeight: '92%',
     overflow: 'hidden',
     borderWidth: 1,
   },
@@ -208,112 +221,113 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: metrics.spacing.lg,
+    paddingTop: moderateScale(16),
+    paddingBottom: moderateScale(12),
     borderBottomWidth: 1,
   },
   subTitle: {
-    fontSize: 10,
+    fontSize: responsiveFontSize(10),
     fontWeight: '800',
     color: '#0284c7',
     letterSpacing: 1.5,
   },
   title: {
-    fontSize: 18,
+    fontSize: responsiveFontSize(18),
     fontWeight: '800',
   },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: moderateScale(34),
+    height: moderateScale(34),
+    borderRadius: moderateScale(17),
     alignItems: 'center',
     justifyContent: 'center',
   },
   scrollBody: {
-    padding: 16,
+    padding: metrics.spacing.md,
   },
   ticket: {
-    borderRadius: 14,
+    borderRadius: metrics.radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
   },
   ticketTop: {
     backgroundColor: '#0f172a',
-    padding: 18,
+    padding: metrics.spacing.lg,
     alignItems: 'center',
   },
   regNoText: {
-    fontSize: 24,
+    fontSize: responsiveFontSize(22),
     fontWeight: '900',
     color: '#38bdf8',
     letterSpacing: 1,
   },
   nameText: {
-    fontSize: 17,
+    fontSize: responsiveFontSize(16),
     fontWeight: '700',
     color: '#ffffff',
-    marginTop: 4,
+    marginTop: moderateScale(4),
   },
   badgeWrapper: {
-    marginTop: 10,
+    marginTop: moderateScale(10),
   },
   ticketDetails: {
-    padding: 14,
-    gap: 10,
+    padding: metrics.spacing.md,
+    gap: moderateScale(10),
   },
   detailRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: moderateScale(10),
   },
   detailCol: {
     flex: 1,
-    padding: 10,
-    borderRadius: 8,
+    padding: moderateScale(10),
+    borderRadius: metrics.radius.sm,
   },
   detailLabel: {
-    fontSize: 9,
+    fontSize: responsiveFontSize(9),
     fontWeight: '700',
     letterSpacing: 0.5,
   },
   detailValue: {
-    fontSize: 13,
+    fontSize: responsiveFontSize(12),
     fontWeight: '800',
-    marginTop: 2,
+    marginTop: moderateScale(2),
   },
   partnerBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    padding: 10,
-    borderRadius: 8,
+    gap: moderateScale(8),
+    padding: moderateScale(10),
+    borderRadius: metrics.radius.sm,
   },
   partnerText: {
-    fontSize: 12,
+    fontSize: responsiveFontSize(11),
   },
   qrContainer: {
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: metrics.radius.md,
+    padding: metrics.spacing.md,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: moderateScale(4),
     borderWidth: 1,
   },
   qrInnerWhite: {
     backgroundColor: '#ffffff',
-    padding: 8,
-    borderRadius: 8,
+    padding: moderateScale(8),
+    borderRadius: metrics.radius.sm,
   },
   qrCodeToken: {
     fontFamily: 'monospace',
-    fontSize: 10,
-    marginTop: 8,
+    fontSize: responsiveFontSize(10),
+    marginTop: moderateScale(8),
     textAlign: 'center',
   },
   footer: {
-    padding: 14,
+    paddingHorizontal: metrics.spacing.md,
+    paddingTop: metrics.spacing.md,
     borderTopWidth: 1,
     flexDirection: 'row',
-    gap: 10,
+    gap: moderateScale(10),
   },
   pdfBtn: {
     flex: 1.5,
@@ -321,27 +335,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 10,
+    gap: moderateScale(6),
+    minHeight: metrics.minTouchTarget,
+    paddingVertical: moderateScale(12),
+    borderRadius: metrics.radius.md,
   },
   pdfBtnText: {
     color: '#ffffff',
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: responsiveFontSize(13),
   },
   shareBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 10,
+    gap: moderateScale(6),
+    minHeight: metrics.minTouchTarget,
+    paddingVertical: moderateScale(12),
+    borderRadius: metrics.radius.md,
     borderWidth: 1,
   },
   shareBtnText: {
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: responsiveFontSize(13),
   },
 });

@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider, useAppTheme } from '@/context/ThemeContext';
 import { AlertProvider } from '@/context/AlertContext';
@@ -33,12 +34,14 @@ function RootNav() {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <AlertProvider>
-        <AuthProvider>
-          <RootNav />
-        </AuthProvider>
-      </AlertProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AlertProvider>
+          <AuthProvider>
+            <RootNav />
+          </AuthProvider>
+        </AlertProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

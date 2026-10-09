@@ -15,11 +15,14 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { useAppTheme } from '@/context/ThemeContext';
+import { responsiveFontSize, moderateScale, metrics } from '@/theme/responsive';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { login } = useAuth();
   const { colors, isDark, toggleTheme } = useAppTheme();
 
@@ -55,45 +58,42 @@ export default function LoginScreen() {
     }
   };
 
+  const topPadding = Math.max(insets.top, Platform.OS === 'android' ? 24 : 12) + moderateScale(8);
+  const bottomPadding = Math.max(insets.bottom, 16) + moderateScale(10);
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: topPadding, paddingBottom: bottomPadding },
+        ]}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.topBar}>
           <TouchableOpacity
             style={[styles.themeBtn, { backgroundColor: colors.surfaceHighlight }]}
             onPress={toggleTheme}
+            activeOpacity={0.7}
           >
-            <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={colors.text} />
+            <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={moderateScale(18)} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {/* Header */}
           <View style={styles.header}>
-                       <View
-              style={{
-                width: 68,
-                height: 68,
-                borderRadius: 18,
-                overflow: 'hidden',
-                backgroundColor: '#ffffff',
-                borderWidth: 1.5,
-                borderColor: isDark ? '#334155' : '#e2e8f0',
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginBottom: 14,
-                elevation: 3,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 6,
-              }}
+            <View
+              style={[
+                styles.iconBox,
+                {
+                  borderColor: isDark ? '#334155' : '#e2e8f0',
+                },
+              ]}
             >
               <Image
                 source={require('../../assets/images/icon.png')}
@@ -102,7 +102,7 @@ export default function LoginScreen() {
               />
             </View>
 
-            <Text style={[styles.title, { color: colors.text ,fontSize:20}]}>Society of Chemical Engineers</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Society of Chemical Engineers</Text>
             <Text style={[styles.subtitle, { color: colors.textMuted }]}>
               Official Society Event Desk
             </Text>
@@ -217,27 +217,29 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: metrics.spacing.md,
   },
   topBar: {
     width: '100%',
     maxWidth: 420,
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginBottom: 16,
+    marginBottom: moderateScale(12),
   },
   themeBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: moderateScale(42),
+    height: moderateScale(42),
+    minWidth: metrics.minTouchTarget,
+    minHeight: metrics.minTouchTarget,
+    borderRadius: metrics.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   card: {
-    borderRadius: 22,
+    borderRadius: metrics.radius.xl,
     width: '100%',
     maxWidth: 420,
-    padding: 26,
+    padding: moderateScale(22),
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
@@ -247,57 +249,60 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: moderateScale(20),
   },
-  logoImage: {
-    width: 150,
-    height: 75,
-    marginBottom: 12,
-  },
-  iconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: '#0284c7',
-    alignItems: 'center',
+  iconBox: {
+    width: moderateScale(68),
+    height: moderateScale(68),
+    borderRadius: metrics.radius.lg,
+    overflow: 'hidden',
+    backgroundColor: '#ffffff',
+    borderWidth: 1.5,
     justifyContent: 'center',
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: moderateScale(12),
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
   },
   title: {
-    fontSize: 24,
+    fontSize: responsiveFontSize(18),
     fontWeight: '800',
     letterSpacing: -0.4,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 13,
-    marginTop: 4,
+    fontSize: responsiveFontSize(12),
+    marginTop: moderateScale(4),
     textAlign: 'center',
   },
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: moderateScale(8),
     backgroundColor: '#fef2f2',
     borderWidth: 1,
     borderColor: '#fecaca',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 16,
+    padding: moderateScale(10),
+    borderRadius: metrics.radius.md,
+    marginBottom: moderateScale(14),
   },
   errorText: {
     color: '#dc2626',
-    fontSize: 13,
+    fontSize: responsiveFontSize(12),
     fontWeight: '600',
     flex: 1,
   },
   form: {
-    gap: 16,
+    gap: moderateScale(14),
   },
   inputGroup: {
-    gap: 6,
+    gap: moderateScale(5),
   },
   label: {
-    fontSize: 11,
+    fontSize: responsiveFontSize(10),
     fontWeight: '800',
     letterSpacing: 0.8,
   },
@@ -305,60 +310,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    borderRadius: metrics.radius.md,
+    paddingHorizontal: metrics.spacing.md,
+    minHeight: metrics.minTouchTarget,
+    height: moderateScale(48),
   },
   inputIcon: {
-    marginRight: 8,
+    marginRight: moderateScale(8),
   },
   input: {
     flex: 1,
-    height: 48,
-    fontSize: 15,
+    height: '100%',
+    fontSize: responsiveFontSize(14),
   },
   eyeBtn: {
-    padding: 8,
+    padding: moderateScale(8),
+    minWidth: moderateScale(36),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loginBtn: {
     backgroundColor: '#0284c7',
-    height: 48,
-    borderRadius: 12,
+    minHeight: metrics.minTouchTarget,
+    height: moderateScale(48),
+    borderRadius: metrics.radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginTop: 8,
+    gap: moderateScale(8),
+    marginTop: moderateScale(6),
   },
   loginBtnDisabled: {
     opacity: 0.6,
   },
   loginBtnText: {
     color: '#ffffff',
-    fontSize: 15,
+    fontSize: responsiveFontSize(14),
     fontWeight: '700',
   },
   footerCreditsContainer: {
-    marginTop: 26,
+    marginTop: moderateScale(22),
     alignItems: 'center',
-    gap: 8,
-    paddingBottom: 16,
-  },
-  deptPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  deptPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    gap: moderateScale(8),
   },
   developedByText: {
-    fontSize: 12,
+    fontSize: responsiveFontSize(11),
     fontWeight: '500',
   },
   authorName: {
@@ -367,14 +363,14 @@ const styles = StyleSheet.create({
   emailPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
+    gap: moderateScale(6),
+    paddingHorizontal: metrics.spacing.md,
+    paddingVertical: moderateScale(6),
+    borderRadius: metrics.radius.full,
     borderWidth: 1,
   },
   emailText: {
-    fontSize: 12,
+    fontSize: responsiveFontSize(11),
     fontWeight: '700',
   },
 });

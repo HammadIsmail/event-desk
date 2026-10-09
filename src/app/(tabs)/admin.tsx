@@ -25,6 +25,7 @@ import {
   ModeratorPermissions,
   DEFAULT_MODERATOR_PERMISSIONS,
 } from '@/types';
+import { responsiveFontSize, moderateScale, metrics } from '@/theme/responsive';
 
 type AdminTab = 'BATCHES' | 'SPORTS' | 'DEPARTMENTS' | 'MODERATORS' | 'AUDIT_LOGS';
 
@@ -81,6 +82,7 @@ export default function AdminScreen() {
   const [moderators, setModerators] = useState<AppUser[]>([]);
   const [modUsername, setModUsername] = useState('');
   const [modPassword, setModPassword] = useState('');
+  const [showModPassword, setShowModPassword] = useState(false);
   const [modFullName, setModFullName] = useState('');
   const [addingMod, setAddingMod] = useState(false);
   const [modPermissions, setModPermissions] = useState<ModeratorPermissions>({ ...DEFAULT_MODERATOR_PERMISSIONS });
@@ -276,6 +278,7 @@ export default function AdminScreen() {
       await dataStore.addModerator(modUsername, modPassword, modFullName, user!, modPermissions);
       setModUsername('');
       setModPassword('');
+      setShowModPassword(false);
       setModFullName('');
       setModPermissions({ ...DEFAULT_MODERATOR_PERMISSIONS });
       const updated = await dataStore.getModerators();
@@ -657,14 +660,36 @@ export default function AdminScreen() {
                   </View>
                   <View style={[styles.inputGroup, { flex: 1 }]}>
                     <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>PASSWORD</Text>
-                    <TextInput
-                      style={[styles.textInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
-                      placeholder="password"
-                      placeholderTextColor={colors.textMuted}
-                      value={modPassword}
-                      onChangeText={setModPassword}
-                      secureTextEntry
-                    />
+                    <View
+                      style={[
+                        styles.passwordInputWrapper,
+                        {
+                          backgroundColor: colors.inputBg,
+                          borderColor: colors.inputBorder,
+                        },
+                      ]}
+                    >
+                      <TextInput
+                        style={[styles.passwordInput, { color: colors.text }]}
+                        placeholder="password"
+                        placeholderTextColor={colors.textMuted}
+                        value={modPassword}
+                        onChangeText={setModPassword}
+                        secureTextEntry={!showModPassword}
+                      />
+                      <TouchableOpacity
+                        onPress={() => setShowModPassword((prev) => !prev)}
+                        style={styles.eyeBtn}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons
+                          name={showModPassword ? 'eye-off-outline' : 'eye-outline'}
+                          size={moderateScale(18)}
+                          color={colors.textMuted}
+                        />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
 
@@ -960,120 +985,144 @@ const styles = StyleSheet.create({
   },
   tabsScrollContent: {
     flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
+    paddingHorizontal: metrics.spacing.md,
+    paddingVertical: moderateScale(10),
+    gap: moderateScale(8),
   },
   tabChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 22,
+    gap: moderateScale(7),
+    paddingHorizontal: metrics.spacing.md,
+    paddingVertical: moderateScale(8),
+    borderRadius: metrics.radius.full,
     borderWidth: 1,
+    minHeight: metrics.minTouchTarget,
   },
   tabChipText: {
-    fontSize: 13,
+    fontSize: responsiveFontSize(13),
     fontWeight: '600',
   },
   tabCountBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 12,
-    marginLeft: 2,
+    paddingHorizontal: moderateScale(7),
+    paddingVertical: moderateScale(2),
+    borderRadius: metrics.radius.full,
+    marginLeft: moderateScale(2),
   },
   tabCountText: {
-    fontSize: 11,
+    fontSize: responsiveFontSize(11),
     fontWeight: '800',
   },
   scrollBody: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: metrics.spacing.md,
+    paddingBottom: moderateScale(48),
   },
   containerMax: {
     maxWidth: 600,
     width: '100%',
     alignSelf: 'center',
-    gap: 14,
+    gap: moderateScale(14),
   },
   tabContent: {
-    gap: 14,
+    gap: moderateScale(14),
   },
   cardSection: {
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: metrics.radius.xl,
+    padding: metrics.spacing.md,
     borderWidth: 1,
-    gap: 12,
+    gap: moderateScale(12),
   },
   cardSectionTitle: {
-    fontSize: 15,
+    fontSize: responsiveFontSize(15),
     fontWeight: '800',
   },
   inputGroup: {
-    gap: 5,
+    gap: moderateScale(5),
   },
   inputLabel: {
-    fontSize: 10,
+    fontSize: responsiveFontSize(10),
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   textInput: {
-    height: 44,
+    minHeight: metrics.minTouchTarget,
+    height: moderateScale(46),
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    fontSize: 14,
+    borderRadius: metrics.radius.md,
+    paddingHorizontal: metrics.spacing.md,
+    fontSize: responsiveFontSize(14),
+  },
+  passwordInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: metrics.minTouchTarget,
+    height: moderateScale(46),
+    borderWidth: 1,
+    borderRadius: metrics.radius.md,
+    paddingLeft: metrics.spacing.md,
+    paddingRight: moderateScale(8),
+  },
+  passwordInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: responsiveFontSize(14),
+  },
+  eyeBtn: {
+    padding: moderateScale(6),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   multiRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: moderateScale(10),
   },
   actionBtn: {
     backgroundColor: '#0284c7',
-    height: 44,
-    borderRadius: 10,
+    minHeight: metrics.minTouchTarget,
+    height: moderateScale(46),
+    borderRadius: metrics.radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    marginTop: 4,
+    gap: moderateScale(6),
+    marginTop: moderateScale(4),
   },
   actionBtnText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: responsiveFontSize(14),
     fontWeight: '700',
   },
   itemsList: {
-    gap: 10,
+    gap: moderateScale(10),
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
-    borderRadius: 10,
+    padding: metrics.spacing.md,
+    borderRadius: metrics.radius.md,
+    minHeight: metrics.minTouchTarget,
   },
   itemTitle: {
-    fontSize: 14,
+    fontSize: responsiveFontSize(14),
     fontWeight: '800',
   },
   itemSub: {
-    fontSize: 11,
-    marginTop: 2,
+    fontSize: responsiveFontSize(11),
+    marginTop: moderateScale(2),
   },
   deleteBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: moderateScale(34),
+    height: moderateScale(34),
+    borderRadius: metrics.radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modCard: {
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: metrics.radius.lg,
+    padding: metrics.spacing.md,
     borderWidth: 1,
-    gap: 10,
+    gap: moderateScale(10),
   },
   modTopRow: {
     flexDirection: 'row',
@@ -1081,106 +1130,110 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: moderateScale(8),
+    paddingVertical: moderateScale(3),
+    borderRadius: metrics.radius.xs,
   },
   statusBadgeText: {
-    fontSize: 10,
+    fontSize: responsiveFontSize(10),
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   permGroup: {
-    gap: 8,
-    marginTop: 4,
+    gap: moderateScale(8),
+    marginTop: moderateScale(4),
   },
   permList: {
-    gap: 7,
+    gap: moderateScale(7),
   },
   permRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 10,
-    borderRadius: 10,
+    padding: moderateScale(10),
+    borderRadius: metrics.radius.md,
     borderWidth: 1,
+    minHeight: metrics.minTouchTarget,
   },
   permRowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: moderateScale(10),
     flex: 1,
-    marginRight: 8,
+    marginRight: moderateScale(8),
   },
   permRowTitle: {
-    fontSize: 13,
+    fontSize: responsiveFontSize(13),
     fontWeight: '700',
   },
   permRowDesc: {
-    fontSize: 10,
-    marginTop: 1,
+    fontSize: responsiveFontSize(10),
+    marginTop: moderateScale(1),
   },
   permBadgesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: moderateScale(6),
   },
   permBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
+    gap: moderateScale(4),
+    paddingHorizontal: moderateScale(7),
+    paddingVertical: moderateScale(3),
+    borderRadius: metrics.radius.xs,
     borderWidth: 1,
   },
   permBadgeText: {
-    fontSize: 10,
+    fontSize: responsiveFontSize(10),
     fontWeight: '700',
   },
   modActionRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: moderateScale(8),
     justifyContent: 'flex-end',
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.05)',
-    paddingTop: 8,
+    paddingTop: moderateScale(8),
   },
   editPermBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 7,
+    gap: moderateScale(5),
+    paddingHorizontal: metrics.spacing.md,
+    paddingVertical: moderateScale(6),
+    borderRadius: metrics.radius.sm,
     borderWidth: 1,
+    minHeight: moderateScale(34),
   },
   editPermBtnText: {
-    fontSize: 11,
+    fontSize: responsiveFontSize(11),
     fontWeight: '700',
   },
   toggleBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 7,
+    paddingHorizontal: metrics.spacing.md,
+    paddingVertical: moderateScale(6),
+    borderRadius: metrics.radius.sm,
+    minHeight: moderateScale(34),
+    justifyContent: 'center',
   },
   toggleBtnText: {
-    fontSize: 11,
+    fontSize: responsiveFontSize(11),
     fontWeight: '700',
   },
   restrictedContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 30,
-    gap: 12,
+    padding: metrics.spacing.xl,
+    gap: moderateScale(12),
   },
   restrictedTitle: {
-    fontSize: 18,
+    fontSize: responsiveFontSize(18),
     fontWeight: '800',
   },
   restrictedSub: {
-    fontSize: 13,
+    fontSize: responsiveFontSize(13),
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -1189,13 +1242,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: metrics.spacing.md,
   },
   modalCard: {
     width: '100%',
     maxWidth: 440,
     maxHeight: '85%',
-    borderRadius: 18,
+    borderRadius: metrics.radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -1203,64 +1256,67 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: metrics.spacing.md,
+    paddingVertical: moderateScale(14),
     borderBottomWidth: 1,
   },
   modalSubTitle: {
-    fontSize: 10,
+    fontSize: responsiveFontSize(10),
     fontWeight: '800',
     color: '#0284c7',
     letterSpacing: 1.2,
   },
   modalTitle: {
-    fontSize: 16,
+    fontSize: responsiveFontSize(16),
     fontWeight: '800',
-    marginTop: 2,
+    marginTop: moderateScale(2),
   },
   modalCloseBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: moderateScale(32),
+    height: moderateScale(32),
+    borderRadius: moderateScale(16),
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalBody: {
-    padding: 16,
+    padding: metrics.spacing.md,
   },
   modalHint: {
-    fontSize: 12,
-    marginBottom: 12,
+    fontSize: responsiveFontSize(12),
+    marginBottom: moderateScale(12),
     lineHeight: 16,
   },
   modalFooter: {
     flexDirection: 'row',
-    gap: 10,
-    padding: 14,
+    gap: moderateScale(10),
+    padding: metrics.spacing.md,
     borderTopWidth: 1,
     justifyContent: 'flex-end',
   },
   modalCancelBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 8,
+    paddingHorizontal: metrics.spacing.md,
+    paddingVertical: moderateScale(9),
+    borderRadius: metrics.radius.sm,
     borderWidth: 1,
+    minHeight: metrics.minTouchTarget,
+    justifyContent: 'center',
   },
   modalCancelText: {
-    fontSize: 13,
+    fontSize: responsiveFontSize(13),
     fontWeight: '600',
   },
   modalSaveBtn: {
     backgroundColor: '#0284c7',
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: 8,
+    paddingHorizontal: metrics.spacing.lg,
+    paddingVertical: moderateScale(9),
+    borderRadius: metrics.radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: metrics.minTouchTarget,
   },
   modalSaveText: {
     color: '#ffffff',
-    fontSize: 13,
+    fontSize: responsiveFontSize(13),
     fontWeight: '700',
   },
 });

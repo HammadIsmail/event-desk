@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAlert } from '@/context/AlertContext';
 import { sqliteStore } from '@/services/sqliteStore';
+import { responsiveFontSize, moderateScale } from '@/theme/responsive';
 
 interface Props {
   title?: string;
@@ -17,10 +19,13 @@ export const HeaderBar: React.FC<Props> = ({
   subtitle,
   onSyncComplete,
 }) => {
+  const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
   const { colors, isDark, toggleTheme } = useAppTheme();
   const { showSuccess, showWarning, showConfirm } = useAlert();
   const [syncing, setSyncing] = useState(false);
+
+  const topPadding = Math.max(insets.top, Platform.OS === 'android' ? 20 : 12) + moderateScale(6);
 
   const handleSync = async () => {
     try {
@@ -54,11 +59,32 @@ export const HeaderBar: React.FC<Props> = ({
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.headerBg, borderBottomColor: colors.borderLight }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.headerBg,
+          borderBottomColor: colors.borderLight,
+          paddingTop: topPadding,
+        },
+      ]}
+    >
       <View style={styles.left}>
-        <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+        <Text
+          style={[styles.title, { color: colors.text }]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {title}
+        </Text>
         {subtitle && (
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>{subtitle}</Text>
+          <Text
+            style={[styles.subtitle, { color: colors.textMuted }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {subtitle}
+          </Text>
         )}
       </View>
 
@@ -110,34 +136,36 @@ export const HeaderBar: React.FC<Props> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingHorizontal: moderateScale(16),
+    paddingBottom: moderateScale(10),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
   },
   left: {
-    gap: 2,
+    flex: 1,
+    marginRight: moderateScale(10),
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 20,
+    fontSize: responsiveFontSize(18),
     fontWeight: '800',
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: responsiveFontSize(12),
     fontWeight: '500',
+    marginTop: 2,
   },
   right: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: moderateScale(8),
   },
   iconBtn: {
-    width: 38,
-    height: 38,
+    width: moderateScale(38),
+    height: moderateScale(38),
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
