@@ -1,5 +1,5 @@
 // src/app/(tabs)/records.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -35,7 +35,7 @@ export default function RecordsScreen() {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSportFilter, setSelectedSportFilter] = useState('ALL');
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<PaymentStatus | 'ALL'>('ALL');
+  const [selectedStatusFilter] = useState<PaymentStatus | 'ALL'>('ALL');
 
   // Modals
   const [selectedTicket, setSelectedTicket] = useState<Registration | null>(null);

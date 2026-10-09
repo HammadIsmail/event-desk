@@ -1,5 +1,5 @@
 // src/app/(tabs)/index.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -33,7 +33,7 @@ const PAYMENT_OPTIONS: DropdownOption[] = [
 export default function RegistrationScreen() {
   const { user, can } = useAuth();
   const { colors } = useAppTheme();
-  const { showWarning, showError, showSuccess } = useAlert();
+  const { showWarning, showError } = useAlert();
 
   // Dynamic config loaded from DB
   const [batches, setBatches] = useState<string[]>([]);
@@ -140,7 +140,6 @@ export default function RegistrationScreen() {
   };
 
   const cleanRoll = rollNumber.trim().toUpperCase();
-  const calculatedRegNo = `${sessionYear}-${selectedDeptCode || 'DEPT'}-${cleanRoll || '___'}`.toUpperCase();
 
   const handleSubmit = async () => {
     if (!studentName.trim()) {

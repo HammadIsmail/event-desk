@@ -18,7 +18,7 @@ export default function TabLayout() {
     if (!isLoading && !user) {
       router.replace('/login');
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, router]);
 
   if (isLoading) {
     return <AppLoader message="Loading Workspace..." />;

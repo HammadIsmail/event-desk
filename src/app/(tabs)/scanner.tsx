@@ -44,7 +44,7 @@ export default function ScannerScreen() {
       }
     }
     checkPerm();
-  }, []);
+  }, [requestPermission]);
 
   const processScanResult = async (tokenOrReg: string) => {
     if (!tokenOrReg || loading) return;

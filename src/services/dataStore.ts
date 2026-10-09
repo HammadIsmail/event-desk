@@ -27,22 +27,24 @@ class DataStoreService {
     if (this.initialized) return;
     await sqliteStore.init();
 
-    // Ensure default admin user exists locally
+    // Ensure default admin user exists locally in SQLite & AsyncStorage
+    const defaultHash = await hashPassword('Admin123!');
+    const defaultAdmin: AppUser & { password_hash: string } = {
+      id: 'user-admin-1',
+      username: 'admin',
+      full_name: 'Super Administrator',
+      role: 'superadmin',
+      password_hash: defaultHash,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    };
+
+    // Save into SQLite
+    await sqliteStore.saveUser(defaultAdmin, 1);
+
     const rawUsers = await AsyncStorage.getItem(STORAGE_KEYS.USERS);
     if (!rawUsers) {
-      const defaultHash = await hashPassword('Admin123!');
-      const initialUsers = [
-        {
-          id: 'user-admin-1',
-          username: 'admin',
-          full_name: 'Super Administrator',
-          role: 'superadmin',
-          password_hash: defaultHash,
-          is_active: true,
-          created_at: new Date().toISOString(),
-        },
-      ];
-      await AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(initialUsers));
+      await AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify([defaultAdmin]));
     }
 
     this.initialized = true;
@@ -56,7 +58,7 @@ class DataStoreService {
     const cleanUsername = username.trim().toLowerCase();
     const pHash = await hashPassword(passwordPlain);
 
-    // Try Supabase first
+    // 1. Try Supabase first
     try {
       const { data, error } = await supabase
         .from('app_users')
@@ -91,6 +93,54 @@ class DataStoreService {
           permissions: perms,
           created_at: data.created_at,
         };
+
+        // Cache in SQLite for full offline capabilities!
+        await sqliteStore.saveUser({
+          ...user,
+          password_hash: data.password_hash,
+        }, 1);
+
+        await this.logAudit({
+          action: 'LOGIN',
+          entity_type: 'auth',
+          performed_by_id: user.id,
+          performed_by_username: user.username,
+        });
+        return user;
+      }
+    } catch {
+      // Offline / network failure: fallback to SQLite
+    }
+
+    // 2. Query from SQLite (works 100% offline!)
+    try {
+      const sqliteUser = await sqliteStore.getUserByUsername(cleanUsername);
+      if (sqliteUser && sqliteUser.password_hash === pHash && sqliteUser.is_active) {
+        let perms = sqliteUser.permissions;
+        if (typeof perms === 'string') {
+          try {
+            perms = JSON.parse(perms);
+          } catch {}
+        }
+        const localPerms = await AsyncStorage.getItem(`@eventdesk_perms_${cleanUsername}`);
+        if (localPerms) {
+          try {
+            perms = JSON.parse(localPerms);
+          } catch {}
+        }
+        if (!perms && sqliteUser.role === 'moderator') {
+          perms = DEFAULT_MODERATOR_PERMISSIONS;
+        }
+
+        const user: AppUser = {
+          id: sqliteUser.id,
+          username: sqliteUser.username,
+          full_name: sqliteUser.full_name,
+          role: sqliteUser.role,
+          is_active: sqliteUser.is_active,
+          permissions: perms,
+          created_at: sqliteUser.created_at,
+        };
         await this.logAudit({
           action: 'LOGIN',
           entity_type: 'auth',
@@ -101,7 +151,7 @@ class DataStoreService {
       }
     } catch {}
 
-    // Fall back to local storage
+    // 3. Fall back to AsyncStorage
     const raw = await AsyncStorage.getItem(STORAGE_KEYS.USERS);
     const users: (AppUser & { password_hash: string })[] = raw ? JSON.parse(raw) : [];
     const found = users.find(
@@ -134,6 +184,10 @@ class DataStoreService {
         permissions: perms,
         created_at: found.created_at,
       };
+
+      // Keep SQLite populated
+      await sqliteStore.saveUser({ ...user, password_hash: found.password_hash }, 1);
+
       await this.logAudit({
         action: 'LOGIN',
         entity_type: 'auth',
@@ -148,10 +202,12 @@ class DataStoreService {
 
   async getModerators(): Promise<AppUser[]> {
     await this.init();
+
+    // 1. Try Supabase and cache into SQLite
     try {
       const { data, error } = await supabase
         .from('app_users')
-        .select('id, username, full_name, role, is_active, permissions, created_at')
+        .select('id, username, full_name, role, is_active, permissions, created_at, password_hash')
         .eq('role', 'moderator')
         .order('created_at', { ascending: false });
       if (!error && data) {
@@ -169,15 +225,52 @@ class DataStoreService {
               perms = JSON.parse(localPerms);
             } catch {}
           }
-          result.push({
-            ...d,
+          const userObj: AppUser = {
+            id: d.id,
+            username: d.username,
+            full_name: d.full_name,
+            role: d.role,
+            is_active: d.is_active,
             permissions: perms || DEFAULT_MODERATOR_PERMISSIONS,
-          });
+            created_at: d.created_at,
+          };
+          result.push(userObj);
+          // Cache in SQLite
+          await sqliteStore.saveUser({ ...userObj, password_hash: d.password_hash || '' }, 1);
         }
         return result;
       }
     } catch {}
 
+    // 2. Query from SQLite (works 100% offline!)
+    try {
+      const sqliteUsers = await sqliteStore.getUsers();
+      const sqliteMods = sqliteUsers.filter((u) => u.role === 'moderator');
+      if (sqliteMods.length > 0) {
+        const list: AppUser[] = [];
+        for (const u of sqliteMods) {
+          let perms = u.permissions;
+          if (typeof perms === 'string') {
+            try {
+              perms = JSON.parse(perms);
+            } catch {}
+          }
+          const localPerms = await AsyncStorage.getItem(`@eventdesk_perms_${u.username.toLowerCase()}`);
+          if (localPerms) {
+            try {
+              perms = JSON.parse(localPerms);
+            } catch {}
+          }
+          list.push({
+            ...u,
+            permissions: perms || DEFAULT_MODERATOR_PERMISSIONS,
+          });
+        }
+        return list;
+      }
+    } catch {}
+
+    // 3. Fallback to AsyncStorage
     const raw = await AsyncStorage.getItem(STORAGE_KEYS.USERS);
     const users: (AppUser & { password_hash: string })[] = raw ? JSON.parse(raw) : [];
     const list: AppUser[] = [];
@@ -224,6 +317,8 @@ class DataStoreService {
       created_at: new Date().toISOString(),
     };
 
+    let isCloudSynced = 0;
+
     // Try inserting into Supabase
     try {
       // First try with permissions column
@@ -241,6 +336,7 @@ class DataStoreService {
         .single();
       if (!error && data) {
         newUser.id = data.id;
+        isCloudSynced = 1;
       } else if (error) {
         // Fallback without permissions column if DB doesn't have it yet
         const { data: fallbackData } = await supabase
@@ -254,9 +350,15 @@ class DataStoreService {
           })
           .select()
           .single();
-        if (fallbackData) newUser.id = fallbackData.id;
+        if (fallbackData) {
+          newUser.id = fallbackData.id;
+          isCloudSynced = 1;
+        }
       }
     } catch {}
+
+    // Save directly to SQLite (ensures offline availability!)
+    await sqliteStore.saveUser(newUser, isCloudSynced);
 
     const raw = await AsyncStorage.getItem(STORAGE_KEYS.USERS);
     const users: (AppUser & { password_hash: string })[] = raw ? JSON.parse(raw) : [];
@@ -303,29 +405,41 @@ class DataStoreService {
       users[index].permissions = permissions;
       targetUsername = users[index].username;
     } else {
-      // Find from Supabase if not yet in local users array
+      // Find from SQLite or Supabase
       try {
-        const { data } = await supabase
-          .from('app_users')
-          .select('*')
-          .or(`id.eq.${modId},username.ilike.${modId}`)
-          .single();
-        if (data) {
-          targetUsername = data.username;
-          const uObj: AppUser & { password_hash: string } = {
-            id: data.id,
-            username: data.username,
-            full_name: data.full_name,
-            role: data.role,
-            is_active: data.is_active,
-            permissions,
-            created_at: data.created_at,
-            password_hash: data.password_hash || '',
-          };
-          users.push(uObj);
+        const sUser = await sqliteStore.getUserByUsername(modId);
+        if (sUser) {
+          targetUsername = sUser.username;
+          sUser.permissions = permissions;
+          users.push(sUser);
           index = users.length - 1;
         }
       } catch {}
+
+      if (index === -1) {
+        try {
+          const { data } = await supabase
+            .from('app_users')
+            .select('*')
+            .or(`id.eq.${modId},username.ilike.${modId}`)
+            .single();
+          if (data) {
+            targetUsername = data.username;
+            const uObj: AppUser & { password_hash: string } = {
+              id: data.id,
+              username: data.username,
+              full_name: data.full_name,
+              role: data.role,
+              is_active: data.is_active,
+              permissions,
+              created_at: data.created_at,
+              password_hash: data.password_hash || '',
+            };
+            users.push(uObj);
+            index = users.length - 1;
+          }
+        } catch {}
+      }
     }
 
     if (!targetUsername && index === -1) {
@@ -336,6 +450,11 @@ class DataStoreService {
       await AsyncStorage.setItem(`@eventdesk_perms_${targetUsername.toLowerCase()}`, JSON.stringify(permissions));
     }
     await AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+
+    // Save to SQLite
+    if (index !== -1 && users[index]) {
+      await sqliteStore.saveUser(users[index], 0);
+    }
 
     // Update active session if currently logged-in user is this moderator
     try {
@@ -385,19 +504,34 @@ class DataStoreService {
   async toggleModeratorStatus(modId: string, actor: AppUser): Promise<boolean> {
     if (actor.role !== 'superadmin') throw new Error('Only Super Admin can update moderator status.');
 
+    let newStatus = false;
     const raw = await AsyncStorage.getItem(STORAGE_KEYS.USERS);
     const users: (AppUser & { password_hash: string })[] = raw ? JSON.parse(raw) : [];
     const index = users.findIndex((u) => u.id === modId);
-    if (index === -1) throw new Error('Moderator not found.');
 
-    users[index].is_active = !users[index].is_active;
-    await AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    if (index !== -1) {
+      users[index].is_active = !users[index].is_active;
+      newStatus = users[index].is_active;
+      await AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+      await sqliteStore.saveUser(users[index], 0);
+    } else {
+      // Check SQLite
+      const sqliteUsers = await sqliteStore.getUsers();
+      const sUser = sqliteUsers.find((u) => u.id === modId);
+      if (sUser) {
+        sUser.is_active = !sUser.is_active;
+        newStatus = sUser.is_active;
+        await sqliteStore.saveUser(sUser, 0);
+      } else {
+        throw new Error('Moderator not found.');
+      }
+    }
 
     try {
-      await supabase.from('app_users').update({ is_active: users[index].is_active }).eq('id', modId);
+      await supabase.from('app_users').update({ is_active: newStatus }).eq('id', modId);
     } catch {}
 
-    return users[index].is_active;
+    return newStatus;
   }
 
   // -------------------------------------------------------------
@@ -591,12 +725,7 @@ class DataStoreService {
       await supabase.from('registrations').delete().eq('reg_no', cleanRegNo);
     } catch {}
 
-    const all = await sqliteStore.getRegistrations();
-    const remaining = all.filter((r) => r.reg_no !== cleanRegNo);
-    // Reload into sqlite
-    if ((sqliteStore as any).db) {
-      (sqliteStore as any).db.runSync('DELETE FROM local_registrations WHERE reg_no = ?', [cleanRegNo]);
-    }
+    await sqliteStore.deleteRegistration(cleanRegNo);
   }
 
   async checkInTicket(qrToken: string, actor: AppUser): Promise<{ registration: Registration; alreadyCheckedIn: boolean }> {
@@ -621,7 +750,7 @@ class DataStoreService {
   }
 
   // -------------------------------------------------------------
-  // AUDIT LOGS
+  // AUDIT LOGS (Saved in SQLite and Cloud)
   // -------------------------------------------------------------
   async logAudit(entry: {
     action: string;
@@ -642,10 +771,16 @@ class DataStoreService {
       created_at: new Date().toISOString(),
     };
 
+    let isCloudSynced = 0;
     try {
-      await supabase.from('audit_logs').insert(item);
+      const { error } = await supabase.from('audit_logs').insert(item);
+      if (!error) isCloudSynced = 1;
     } catch {}
 
+    // Save directly into SQLite (ensures 100% offline persistence)
+    await sqliteStore.saveAuditLog(item, isCloudSynced);
+
+    // Also maintain in AsyncStorage
     const raw = await AsyncStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
     const logs: AuditLog[] = raw ? JSON.parse(raw) : [];
     logs.unshift(item);
@@ -653,11 +788,30 @@ class DataStoreService {
   }
 
   async getAuditLogs(): Promise<AuditLog[]> {
+    // 1. Try Supabase and cache into SQLite
     try {
-      const { data, error } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
-      if (!error && data) return data;
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (!error && data && data.length > 0) {
+        for (const log of data) {
+          await sqliteStore.saveAuditLog(log, 1);
+        }
+        return data;
+      }
     } catch {}
 
+    // 2. Query from SQLite (works 100% offline!)
+    try {
+      const sqliteLogs = await sqliteStore.getAuditLogs();
+      if (sqliteLogs && sqliteLogs.length > 0) {
+        return sqliteLogs;
+      }
+    } catch {}
+
+    // 3. Fallback to AsyncStorage
     const raw = await AsyncStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
     return raw ? JSON.parse(raw) : [];
   }

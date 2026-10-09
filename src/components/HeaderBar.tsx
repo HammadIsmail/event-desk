@@ -36,7 +36,7 @@ export const HeaderBar: React.FC<Props> = ({
         `SQLite & Supabase synchronized!\n• Uploaded to Cloud: ${res.uploaded} records\n• Downloaded from Cloud: ${res.downloaded} items`
       );
       if (onSyncComplete) onSyncComplete();
-    } catch (err: any) {
+    } catch {
       showWarning(
         'Sync Notice',
         'Could not reach Cloud. Data remains safely stored locally in SQLite.'

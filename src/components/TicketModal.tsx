@@ -27,7 +27,7 @@ interface Props {
 export const TicketModal: React.FC<Props> = ({ visible, registration, onClose }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
-  const { showError, showSuccess } = useAlert();
+  const { showError } = useAlert();
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing] = useState(false);
 

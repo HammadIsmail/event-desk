@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { useAppTheme } from '@/context/ThemeContext';
-import { metrics, moderateScale } from '@/theme/responsive';
+import { metrics } from '@/theme/responsive';
 
 interface Props {
   children: React.ReactNode;

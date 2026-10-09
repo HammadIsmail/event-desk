@@ -1,5 +1,5 @@
 // src/components/AppLoader.tsx
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, Animated, Easing, ActivityIndicator } from 'react-native';
 import { useAppTheme } from '@/context/ThemeContext';
 
@@ -9,8 +9,8 @@ interface Props {
 
 export const AppLoader: React.FC<Props> = ({ message = 'Loading System...' }) => {
   const { colors, isDark } = useAppTheme();
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [pulseAnim] = useState(() => new Animated.Value(1));
+  const [fadeAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     // Fade in
@@ -37,7 +37,7 @@ export const AppLoader: React.FC<Props> = ({ message = 'Loading System...' }) =>
         }),
       ])
     ).start();
-  }, []);
+  }, [fadeAnim, pulseAnim]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

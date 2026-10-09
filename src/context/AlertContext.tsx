@@ -1,5 +1,5 @@
 // src/context/AlertContext.tsx
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -74,10 +74,10 @@ export const AlertProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isConfirming, setIsConfirming] = useState(false);
 
   // Animation values
-  const scaleAnim = useRef(new Animated.Value(0.85)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const [scaleAnim] = useState(() => new Animated.Value(0.85));
+  const [opacityAnim] = useState(() => new Animated.Value(0));
 
-  const runEnterAnimation = () => {
+  const runEnterAnimation = useCallback(() => {
     scaleAnim.setValue(0.88);
     opacityAnim.setValue(0);
     Animated.parallel([
@@ -93,7 +93,7 @@ export const AlertProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         useNativeDriver: true,
       }),
     ]).start();
-  };
+  }, [opacityAnim, scaleAnim]);
 
   const closeDialog = useCallback(() => {
     Animated.timing(opacityAnim, {
@@ -124,15 +124,18 @@ export const AlertProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setVisible(true);
       runEnterAnimation();
     },
-    []
+    [runEnterAnimation]
   );
 
-  const showConfirm = useCallback((config: ConfirmConfig) => {
-    setConfirmConfig(config);
-    setModalMode('confirm');
-    setVisible(true);
-    runEnterAnimation();
-  }, []);
+  const showConfirm = useCallback(
+    (config: ConfirmConfig) => {
+      setConfirmConfig(config);
+      setModalMode('confirm');
+      setVisible(true);
+      runEnterAnimation();
+    },
+    [runEnterAnimation]
+  );
 
   const showSuccess = useCallback(
     (title: string, message?: string) => showAlert(title, message, 'success'),
@@ -171,7 +174,7 @@ export const AlertProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         await res;
       }
       closeDialog();
-    } catch (err) {
+    } catch {
       setIsConfirming(false);
       // Keep open or let error show
     }
@@ -227,14 +230,20 @@ export const AlertProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const meta = getTypeMeta();
 
-  const contextValue: AlertContextValue = {
-    showAlert,
-    showConfirm,
-    showSuccess,
-    showError,
-    showWarning,
-  };
-  globalAlertDispatcher = contextValue;
+  const contextValue: AlertContextValue = useMemo(
+    () => ({
+      showAlert,
+      showConfirm,
+      showSuccess,
+      showError,
+      showWarning,
+    }),
+    [showAlert, showConfirm, showSuccess, showError, showWarning]
+  );
+
+  useEffect(() => {
+    globalAlertDispatcher = contextValue;
+  }, [contextValue]);
 
   return (
     <AlertContext.Provider value={contextValue}>
