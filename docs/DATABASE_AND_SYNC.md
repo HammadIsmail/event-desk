@@ -1,12 +1,12 @@
 # Database Schema & Offline SQLite Sync Engine
 
-The Event Desk features a dual-layer data architecture: a cloud-hosted **PostgreSQL database (Supabase)** and a local **SQLite database (`expo-sqlite`)** allowing seamless offline registration and ticket issuance with manual or automatic cloud synchronization.
+The Event Desk features a robust dual-layer data architecture: a cloud-hosted **PostgreSQL database (Supabase)** and a local **SQLite database (`expo-sqlite`)** allowing seamless 100% offline operation (registration, QR pass verification, authentication, directory browsing, analytics, and admin management) with bidirectional cloud synchronization.
 
 ---
 
-## 1. Supabase Database Schema
+## 1. Supabase Cloud Database Schema (PostgreSQL)
 
-All tables are defined in [`supabase-schema.sql`](../supabase-schema.sql):
+All remote tables are defined in [`supabase-schema.sql`](../supabase-schema.sql):
 
 ### `app_users`
 Stores system accounts (Super Admins & Moderators).
@@ -26,9 +26,8 @@ Dynamic academic years/sessions (e.g. `2023`, `2024`, `2025`, `2026`).
 
 ### `departments`
 Academic departments.
-- `id` (UUID, Primary Key)
+- `code` (TEXT, Primary Key, e.g. `CH`, `CS`, `ME`, `EE`, `BBA`)
 - `name` (TEXT)
-- `code` (TEXT, Unique, e.g. `CH`, `CS`, `ME`, `EE`)
 - `description` (TEXT)
 - `is_active` (BOOLEAN)
 
@@ -61,7 +60,8 @@ Participant records & verified ticket tokens.
 - `checked_in` (BOOLEAN, default `false`)
 - `checked_in_at` (TIMESTAMPTZ)
 - `checked_in_by` (TEXT)
-- `registered_by` (TEXT)
+- `created_by_id` (TEXT)
+- `created_by_username` (TEXT)
 - `created_at` (TIMESTAMPTZ)
 
 ### `audit_logs`
@@ -79,28 +79,126 @@ Activity logging for compliance and moderation tracking.
 
 ## 2. Local SQLite Engine (`sqliteStore.ts`)
 
-Located in [`src/services/sqliteStore.ts`](../src/services/sqliteStore.ts):
-- Implements local SQLite database named `offline_eventdesk.db`.
-- Mirrored tables: `local_registrations`, `local_batches`, `local_departments`, `local_sports`, and `sync_queue`.
-- **`synced` Flag**: Every local record includes a `synced INTEGER DEFAULT 0` column. Newly registered students offline have `synced = 0`.
+Located in [`src/services/sqliteStore.ts`](../src/services/sqliteStore.ts), the offline database is named **`eventdesk.db`** using `expo-sqlite` ~57.0.4.
+
+### The 6 Local SQLite Tables
+
+```sql
+CREATE TABLE IF NOT EXISTS local_batches (
+  year TEXT PRIMARY KEY,
+  is_active INTEGER DEFAULT 1,
+  synced INTEGER DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS local_departments (
+  code TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  is_active INTEGER DEFAULT 1,
+  synced INTEGER DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS local_sports (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  code TEXT NOT NULL,
+  formats TEXT NOT NULL,
+  fee REAL NOT NULL DEFAULT 0,
+  is_active INTEGER DEFAULT 1,
+  synced INTEGER DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS local_registrations (
+  reg_no TEXT PRIMARY KEY,
+  student_name TEXT NOT NULL,
+  session_year TEXT NOT NULL,
+  department_code TEXT NOT NULL,
+  sport_id TEXT NOT NULL,
+  sport_name TEXT NOT NULL,
+  category_format TEXT NOT NULL,
+  partner_name TEXT,
+  partner_reg_no TEXT,
+  payment_status TEXT NOT NULL,
+  total_fee REAL NOT NULL,
+  paid_amount REAL NOT NULL,
+  phone TEXT,
+  email TEXT,
+  notes TEXT,
+  qr_token TEXT NOT NULL,
+  checked_in INTEGER DEFAULT 0,
+  checked_in_at TEXT,
+  checked_in_by TEXT,
+  created_by_id TEXT,
+  created_by_username TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT,
+  synced INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS local_users (
+  id TEXT PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  full_name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  is_active INTEGER DEFAULT 1,
+  permissions TEXT,
+  created_at TEXT NOT NULL,
+  synced INTEGER DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS local_audit_logs (
+  id TEXT PRIMARY KEY,
+  action TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT,
+  performed_by_id TEXT,
+  performed_by_username TEXT NOT NULL,
+  details TEXT,
+  created_at TEXT NOT NULL,
+  synced INTEGER DEFAULT 0
+);
+```
 
 ---
 
-## 3. Bidirectional Cloud Sync Workflow
+## 3. Offline Authentication Workflow
 
-Users can tap the **Sync Button** in the top [`HeaderBar`](../src/components/HeaderBar.tsx):
+Staff members frequently work in venues without WiFi or cellular data. To guarantee that authentication never fails offline:
+
+1. **Online Login**:
+   - Authenticates against Supabase `app_users`.
+   - On success, saves user record and password hash to `local_users` with `synced = 1`.
+2. **Offline Login**:
+   - When Supabase is unreachable, `dataStore.authenticateUser()` queries `local_users`.
+   - Verifies the entered password against `local_users.password_hash` using salted SHA-256.
+   - If user is active, sets the authenticated session with their stored permissions.
+3. **Admin Seed**:
+   - Default Super Admin (`admin` / `Admin123!`) is automatically seeded into `local_users` during database initialization.
+
+---
+
+## 4. Bidirectional Cloud Sync Engine
+
+Users trigger cloud synchronization via the **Cloud Sync Button** in the top [`HeaderBar`](../src/components/HeaderBar.tsx) or during background reconciliations:
 
 ```text
-[Local SQLite]                       [Supabase Cloud]
-      │                                     │
-      ├───── 1. Upload unsynced (synced=0) ─┼───► Insert/Upsert into registrations
-      │      records to Supabase            │
-      │                                     │
-      ├◄──── 2. Download latest batches, ───┤
-      │      departments, sports & records  │
-      │                                     │
-      └───── 3. Mark uploaded records as ───┘
-             synced = 1
+[Local SQLite]                                              [Supabase Cloud]
+      │                                                            │
+      ├───── 1. Upload Unsynced Registrations (synced=0) ──────────┼───► Upsert registrations
+      │      Upload Unsynced Batches, Depts, Sports, Users, Logs   │
+      │                                                            │
+      ├◄──── 2. Download Remote Cloud Data ────────────────────────┤
+      │      (Batches, Departments, Sports, Registrations, Users)  │
+      │                                                            │
+      ├───── 3. Conflict Safety Check ─────────────────────────────┤
+      │      (DO NOT overwrite local records having synced = 0)    │
+      │                                                            │
+      └───── 4. Mark uploaded local records as synced = 1 ─────────┘
 ```
 
-If no internet connection is available, the sync safely reports a **Sync Notice** without interrupting user workflow or risking data loss.
+### Conflict Safety Rules
+- When remote records are downloaded during sync, the engine inspects the local table first.
+- If a record exists locally with `synced = 0` (meaning it has pending offline edits), the cloud record **will not overwrite** the local record.
+- Once the local record is uploaded to Supabase, its flag is updated to `synced = 1`.
+- The synchronization function returns exact metrics: `{ uploaded: number, downloaded: number }`, displayed to the user via a clean success alert.

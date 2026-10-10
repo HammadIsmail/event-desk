@@ -1,10 +1,32 @@
 # Deployment & EAS Cloud Build Guide
 
-This document outlines how to build standalone Android APK files, manage environment variables, and seed the initial Super Admin account.
+This document outlines how to verify code quality, build standalone Android APK files with EAS Cloud, manage environment variables, and seed the initial Super Admin account.
 
 ---
 
-## 1. EAS Cloud Build (Standalone APK)
+## 1. Pre-Build Verification Checklist
+
+Always run the full verification pipeline before triggering cloud builds or publishing releases:
+
+```bash
+# 1. Run automated unit test suite (11 functional tests)
+npm test
+
+# 2. Run TypeScript static typechecker
+npx tsc --noEmit
+
+# 3. Run Expo linter
+npx expo lint
+
+# 4. Optional: Check dependency health
+npx expo-doctor
+```
+
+Ensure all commands report 0 errors before proceeding with EAS builds.
+
+---
+
+## 2. EAS Cloud Build (Standalone APK)
 
 The project includes [`eas.json`](../eas.json) preconfigured to produce downloadable, standalone `.apk` files without needing Android Studio or a local build environment.
 
@@ -13,7 +35,7 @@ The project includes [`eas.json`](../eas.json) preconfigured to produce download
 npx eas-cli@latest build -p android --profile preview
 ```
 
-### Build Process:
+### Build Workflow:
 1. When prompted, log in with your free [Expo account](https://expo.dev).
 2. If asked to generate a new Android keystore, select **Yes** (EAS manages and secures signing credentials in the cloud).
 3. The build queue will start in Expo Cloud.
@@ -21,7 +43,7 @@ npx eas-cli@latest build -p android --profile preview
 
 ---
 
-## 2. Environment Variables
+## 3. Environment Variables
 
 Store your credentials in `.env` (use `.env.example` as a template):
 
@@ -34,7 +56,7 @@ EXPO_PUBLIC_SUPABASE_KEY=<your-anon-publishable-key>
 
 ---
 
-## 3. Initial Super Admin Seeding
+## 4. Initial Super Admin Seeding
 
 To create or reset the Super Admin account in Supabase:
 
@@ -47,9 +69,11 @@ node scripts/seed-admin.js <username> <password> "<Full Name>"
 node scripts/seed-admin.js admin Admin123! "Super Administrator"
 ```
 
+> **Offline Fallback**: The app also automatically provisions the default Super Admin credentials (`admin` / `Admin123!`) in local SQLite (`eventdesk.db`) on initial launch, ensuring administrators can log in even before the first cloud connection.
+
 ---
 
-## 4. Icon Generation & Branding Assets
+## 5. Icon Generation & Branding Assets
 
 If the society logo is updated in the future:
 1. Place the new source image at `assets/images/sce-logo.png`.

@@ -30,7 +30,7 @@ export interface ModeratorPermissions {
 ```
 
 ### Default Permissions
-When a moderator is created without custom flags, the default is:
+When a moderator is created without custom flags, the default configuration is:
 ```typescript
 export const DEFAULT_MODERATOR_PERMISSIONS: ModeratorPermissions = {
   can_register: true,
@@ -59,10 +59,15 @@ const hasAnalytics = can('can_view_analytics');
 
 ---
 
-## 4. Permission Persistence & Synchronization
+## 4. Multi-Layer Permission Persistence & Offline Authentication
 
-Permissions are preserved in three layers to ensure immediate responsiveness even during offline conditions:
+Permissions and user credentials are preserved across three synchronized storage layers to guarantee immediate responsiveness and offline operation:
 
-1. **Supabase Database**: Stored in the `permissions` JSONB column in `app_users`.
-2. **Local User Store**: Maintained in `STORAGE_KEYS.USERS` via AsyncStorage.
-3. **Dedicated Permission Key**: Saved under `@eventdesk_perms_${username.toLowerCase()}`. When a moderator logs in, `authenticateUser()` checks this key to guarantee that permissions updated by Super Admin apply immediately on the next session.
+1. **Supabase Database (Cloud)**: Stored in the `permissions` JSONB column in `app_users`.
+2. **Local SQLite Database (`eventdesk.db`)**:
+   - Maintained in the `local_users` table with columns: `id`, `username`, `full_name`, `role`, `password_hash`, `is_active`, `permissions`, `created_at`, `synced`.
+   - Allows users to **log in offline** without contacting Supabase.
+   - Preserves offline edits with `synced = 0`.
+3. **AsyncStorage Cache**:
+   - Active session preserved under `@eventdesk_active_user_session`.
+   - Individual user permission overrides stored under `@eventdesk_perms_${username.toLowerCase()}` to ensure Super Admin permission modifications apply immediately on the moderator's next session.
